@@ -77,6 +77,12 @@ class User():
 
         self.spk_sig = self.sik.sign(spk_bytes)
 
+    def send_users(self):
+        res = sio.call("get_users")
+        # res = {"users": ["AAA", "BBB", ...]}
+        return res["users"]
+
+
     def serialize_user(self):
         
         ik_bytes = self.ik.public_key().public_bytes_raw()
@@ -137,6 +143,7 @@ class User():
             return True
         else:
             return False
+
     def recieve_message(self, username, msg):
         header = Header.deserialize(msg['header'])
         ciphertext = deserialize(msg['cipher'])
@@ -184,6 +191,7 @@ class User():
             return False
         
         return True
+
     def perform_x3dh(self, username):
         if(not username in self.sessions):
             print("User key bundles not requested!")
@@ -225,7 +233,24 @@ class User():
             print("DH Failed!")
         return res
 
+    def cleanup_contact(self, username):
+        # cancella tutti i messaggi in chiaro
+        if username in self.messages:
+            del self.messages[username]
 
+        # cancella la sessione X3DH
+        if username in self.x3dh_session:
+            del self.x3dh_session[username]
+
+        # cancella la sessione Ratchet
+        if username in self.ratchet_session:
+            del self.ratchet_session[username]
+
+        # cancella eventuali bundle/chiavi di sessione
+        if username in self.sessions:
+            del self.sessions[username]
+
+        print(f"[CLIENT] Pulito stato locale per '{username}'")
 
 def reg_callback(user, msg_event=lambda x: x, joined_event=None, left_event=None):
     @sio.on('x3dh_message')
@@ -249,8 +274,11 @@ def reg_callback(user, msg_event=lambda x: x, joined_event=None, left_event=None
     if left_event is not None:
         @sio.on('user_left')
         def on_user_left(data):
+            user.cleanup_contact(data["username"])
             left_event(data["username"])
             return True
+
+
 
 
 if __name__ == "main":

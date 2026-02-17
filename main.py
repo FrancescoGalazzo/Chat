@@ -11,8 +11,6 @@ from client.client import sio, User, reg_callback, ensure_connected
 username = None
 user = User(None)
 target_user = None
-print("### MAIN.PY NUOVO CARICATO ###")
-
 
 # =========================
 # Socket.IO client wrapper
@@ -40,7 +38,7 @@ class Worker(QThread):
 
     def run(self):
         def on_message(data):
-            # Qui ricevi il messaggio dal server e lo ritrasmetti come segnale
+           # Qui ricevi il messaggio dal server e lo ritrasmetti come segnale
             self.message_received.emit(data)
 
         def on_joined(username_):
@@ -51,11 +49,11 @@ class Worker(QThread):
             # Utente uscito, segnala alla GUI
             self.user_left.emit(username_)
 
+
         reg_callback(user, on_message, joined_event=on_joined, left_event=on_left)
 
         # Socket.IO client bloccante: gira finché la connessione è attiva
-        self.client = SocketIOClient()
-        self.client.run()
+        sio.wait()
 
     def stop(self):
         self._running = False
@@ -103,7 +101,8 @@ class LoginScreen(QWidget):
         self.error_label.setText("")
 
         if user.register_user():
-            self.parent().switch_to_select_screen()
+           self.parent().switch_to_select_screen_first_time()
+
         else:
             self.error_label.setText("Username già in uso, scegline un altro.")
 
@@ -125,10 +124,6 @@ class SelectScreen(QWidget):
         self.main_layout.addLayout(self.user_layout)
 
         self.user_buttons = {}
-
-        # utenti iniziali dal server (impostati in user.initial_users)
-        for u in getattr(user, "initial_users", []):
-                self.add_user_button(u)
 
         self.setLayout(self.main_layout)
 
@@ -163,16 +158,16 @@ class SelectScreen(QWidget):
         self.user_buttons[name] = button
 
     def remove_user_button(self, name):
-        if name not in self.user_buttons:
-            return  # già rimosso
-
-        btn = self.user_buttons.pop(name)
+        print("RIMUOVO IL BOTTONE DI:", name)
+        btn = self.user_buttons.pop(name, None)  # <-- nessun errore se non esiste
+        if btn is None:
+            return
         try:
             btn.setParent(None)
-            btn.deleteLater()  # chiede a Qt di distruggerlo in modo sicuro
+            btn.deleteLater()
         except RuntimeError:
-            # il C++ object potrebbe essere già stato distrutto, ignora
-            pass
+            print("Errore nella rimozione del bottone (già distrutto?)")
+
 
 
 class ChatScreen(QWidget):
@@ -207,10 +202,13 @@ class ChatScreen(QWidget):
 
     def send_message(self):
         message = self.input_field.text()
+
         if message:
             self.input_field.clear()
+            print("sending")
             user.send_message(target_user, message)
-            self.update_messages(user.messages.get(target_user, []))
+            self.update_messages(user.messages[target_user])
+
 
     def update_messages(self, messages):
         self.chat_history.clear()
@@ -219,7 +217,11 @@ class ChatScreen(QWidget):
             self.append_colored_text(sender, msg, color)
 
     def back_message(self):
-        self.parent().switch_to_select_screen()
+        main_window = self.window()
+        if hasattr(main_window, "switch_to_select_screen_refresh"):
+            main_window.switch_to_select_screen_refresh()
+        else:
+            print("MainWindow non ha switch_to_select_screen_refresh")
 
     def append_colored_text(self, sender, msg, color):
         self.chat_history.append(
@@ -237,6 +239,8 @@ class MainWindow(QMainWindow):
         self.message_received_signal = worker.message_received
 
         self.login_screen = LoginScreen(self)
+        self.select_screen = None
+        self.chat_screen = None
         self.setCentralWidget(self.login_screen)
 
         # Connessioni segnali dal worker alla GUI
@@ -251,33 +255,54 @@ class MainWindow(QMainWindow):
 
     def on_user_left_gui(self, username_):
         print("GUI SLOT: user left", username_)
-        if hasattr(self, "select_screen"):
-            self.select_screen.remove_user_button(username_)
-        global target_user
-        if target_user == username_ and hasattr(self, "chat_screen"):
-            self.switch_to_select_screen()
 
-    def on_message_received_gui(self, _data):
-        # Aggiorna la chat con i messaggi correnti per il target_user
+        if self.select_screen is not None:
+            self.select_screen.remove_user_button(username_)
+
         global target_user
-        if target_user is not None and hasattr(self, "chat_screen"):
+        current = self.centralWidget()
+        if isinstance(current, ChatScreen) and target_user == username_:
+            self.switch_to_select_screen_refresh()
+
+    def on_message_received_gui(self, data):
+        global target_user
+
+        current = self.centralWidget()
+
+        if isinstance(current, ChatScreen) and target_user is not None:
             messages = user.messages.get(target_user, [])
             self.update_chat(messages)
+        else:
+            print("Non sono in ChatScreen, non aggiorno la chat")
+
+    def switch_to_select_screen_first_time(self):
+        self.select_screen = SelectScreen(self)
+        for u in getattr(user, "initial_users", []):
+            self.select_screen.add_user_button(u)
+        self.setCentralWidget(self.select_screen)
+
+
+    def switch_to_select_screen_refresh(self):
+        users = user.send_users()
+        print(users)
+        self.select_screen = SelectScreen(self)
+
+        for u in users:
+            if u != user.username:
+                self.select_screen.add_user_button(u)
+
+        self.setCentralWidget(self.select_screen)
+
 
     def switch_to_chat_screen(self):
         self.chat_screen = ChatScreen(self)
         self.setCentralWidget(self.chat_screen)
 
-    def switch_to_select_screen(self):
-        self.select_screen = SelectScreen(self)
-        self.setCentralWidget(self.select_screen)
 
     def update_chat(self, messages):
-        if hasattr(self, "chat_screen"):
-            self.chat_screen.update_messages(messages)
+         self.chat_screen.update_messages(messages)
 
     def closeEvent(self, event):
-        # ferma il worker in chiusura finestra
         if self.worker is not None:
             self.worker.stop()
             self.worker.wait(2000)
