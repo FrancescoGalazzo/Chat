@@ -279,8 +279,6 @@ def reg_callback(user, msg_event=lambda x: x, joined_event=None, left_event=None
             return True
 
 
-
-
 if __name__ == "main":
     parser = argparse.ArgumentParser(description="Process username and boolean arguments")
     parser.add_argument("username", help="The username")
@@ -290,7 +288,7 @@ if __name__ == "main":
     args = parser.parse_args()
     user= User(args.username)
     user.register_user()
-    if(args.initiate):
+    if args.initiate:
         user.request_user_prekey_bundle(args.target)
         user.perform_x3dh(args.target)
         print(user.send_message(args.target, "Hello"))

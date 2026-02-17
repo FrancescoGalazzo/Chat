@@ -49,7 +49,6 @@ class Worker(QThread):
             # Utente uscito, segnala alla GUI
             self.user_left.emit(username_)
 
-
         reg_callback(user, on_message, joined_event=on_joined, left_event=on_left)
 
         # Socket.IO client bloccante: gira finché la connessione è attiva
@@ -158,7 +157,6 @@ class SelectScreen(QWidget):
         self.user_buttons[name] = button
 
     def remove_user_button(self, name):
-        print("RIMUOVO IL BOTTONE DI:", name)
         btn = self.user_buttons.pop(name, None)  # <-- nessun errore se non esiste
         if btn is None:
             return
@@ -167,7 +165,6 @@ class SelectScreen(QWidget):
             btn.deleteLater()
         except RuntimeError:
             print("Errore nella rimozione del bottone (già distrutto?)")
-
 
 
 class ChatScreen(QWidget):

@@ -1,13 +1,11 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <project version="4">
   <component name="ChangeListManager">
-    <list default="true" id="101fa5a1-66b3-4dca-8428-13d82ca62f5c" name="Changes" comment="I still need to fix bugs">
+    <list default="true" id="101fa5a1-66b3-4dca-8428-13d82ca62f5c" name="Changes" comment="Fix all the bugs">
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/client/client.py" beforeDir="false" afterPath="$PROJECT_DIR$/client/client.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/main.py" beforeDir="false" afterPath="$PROJECT_DIR$/main.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/server/server.py" beforeDir="false" afterPath="$PROJECT_DIR$/server/server.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/server/user_keys.json" beforeDir="false" afterPath="$PROJECT_DIR$/server/user_keys.json" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/user_keys.json" beforeDir="false" afterPath="$PROJECT_DIR$/user_keys.json" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -183,7 +181,7 @@
       <option name="number" value="Default" />
       <option name="presentableId" value="Default" />
       <updated>1771283296948</updated>
-      <workItem from="1771283298057" duration="19834000" />
+      <workItem from="1771283298057" duration="20276000" />
     </task>
     <task id="LOCAL-00001" summary="I still need to fix bugs">
       <option name="closed" value="true" />
@@ -209,7 +207,23 @@
       <option name="project" value="LOCAL" />
       <updated>1771283952955</updated>
     </task>
-    <option name="localTasksCounter" value="4" />
+    <task id="LOCAL-00004" summary="Fix all the bugs">
+      <option name="closed" value="true" />
+      <created>1771303466109</created>
+      <option name="number" value="00004" />
+      <option name="presentableId" value="LOCAL-00004" />
+      <option name="project" value="LOCAL" />
+      <updated>1771303466109</updated>
+    </task>
+    <task id="LOCAL-00005" summary="Fix all the bugs">
+      <option name="closed" value="true" />
+      <created>1771303491190</created>
+      <option name="number" value="00005" />
+      <option name="presentableId" value="LOCAL-00005" />
+      <option name="project" value="LOCAL" />
+      <updated>1771303491190</updated>
+    </task>
+    <option name="localTasksCounter" value="6" />
     <servers />
   </component>
   <component name="TypeScriptGeneratedFilesManager">
@@ -228,12 +242,13 @@
   </component>
   <component name="VcsManagerConfiguration">
     <MESSAGE value="I still need to fix bugs" />
-    <option name="LAST_COMMIT_MESSAGE" value="I still need to fix bugs" />
+    <MESSAGE value="Fix all the bugs" />
+    <option name="LAST_COMMIT_MESSAGE" value="Fix all the bugs" />
   </component>
   <component name="com.intellij.coverage.CoverageDataManagerImpl">
     <SUITE FILE_PATH="coverage/Chat$client__1_.coverage" NAME="client (1) Coverage Results" MODIFIED="1771284082673" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="false" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$/client" />
-    <SUITE FILE_PATH="coverage/Chat$server.coverage" NAME="server Coverage Results" MODIFIED="1771302939983" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="false" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$/server" />
+    <SUITE FILE_PATH="coverage/Chat$server.coverage" NAME="server Coverage Results" MODIFIED="1771303655334" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="false" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$/server" />
     <SUITE FILE_PATH="coverage/Chat$client2.coverage" NAME="client2 Coverage Results" MODIFIED="1771283583648" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="false" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$/client" />
-    <SUITE FILE_PATH="coverage/Chat$main.coverage" NAME="main Coverage Results" MODIFIED="1771302941993" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="false" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$" />
+    <SUITE FILE_PATH="coverage/Chat$main.coverage" NAME="main Coverage Results" MODIFIED="1771303665656" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="false" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$" />
   </component>
 </project>
