@@ -2,7 +2,7 @@ import sys
 
 from PySide6.QtWidgets import (
     QApplication, QPushButton, QVBoxLayout, QHBoxLayout,
-    QTextEdit, QLineEdit, QWidget, QLabel, QMainWindow,
+    QTextEdit, QLineEdit, QWidget, QLabel, QMainWindow, QFileDialog,
 )
 from PySide6.QtCore import QObject, QThread, Signal
 
@@ -168,9 +168,13 @@ class SelectScreen(QWidget):
 
 
 class ChatScreen(QWidget):
-    def __init__(self, parent=None):
+    def __init__(self, main_window, parent=None):
         super(ChatScreen, self).__init__(parent)
         self.setWindowTitle("Chat")
+        self.main_window = main_window
+        self.target_user = target_user
+
+        self.input_field = QLineEdit()
 
         xlayout = QVBoxLayout()
         chat_layout = QHBoxLayout()
@@ -189,13 +193,40 @@ class ChatScreen(QWidget):
         self.input_field = QLineEdit()
         send_button = QPushButton("Send")
         send_button.clicked.connect(self.send_message)
+
+        file_button = QPushButton("File")           # <-- nuovo bottone
+        file_button.clicked.connect(self.send_file)
+
         chat_layout.addWidget(self.input_field)
         chat_layout.addWidget(send_button)
+        chat_layout.addWidget(file_button)
+        
         xlayout.addLayout(chat_layout)
 
         self.setLayout(xlayout)
 
         self.update_messages(user.messages.get(target_user, []))
+
+    def send_file(self):
+        global target_user
+        if target_user is None:
+            return
+
+        file_path, _ = QFileDialog.getOpenFileName(
+            self,
+            "Seleziona un file da inviare",
+            "",
+            "Tutti i file (*.*)"
+        )
+        if not file_path:
+            return
+
+        user.send_file(target_user, file_path)
+
+        # opzionale: mostra qualcosa in chat
+        messages = user.messages.setdefault(target_user, [])
+        messages.append((username, f"[FILE] {file_path}"))
+        self.update_messages(messages)
 
     def send_message(self):
         message = self.input_field.text()
@@ -214,11 +245,7 @@ class ChatScreen(QWidget):
             self.append_colored_text(sender, msg, color)
 
     def back_message(self):
-        main_window = self.window()
-        if hasattr(main_window, "switch_to_select_screen_refresh"):
-            main_window.switch_to_select_screen_refresh()
-        else:
-            print("MainWindow non ha switch_to_select_screen_refresh")
+        self.main_window.switch_to_select_screen_refresh()
 
     def append_colored_text(self, sender, msg, color):
         self.chat_history.append(
@@ -230,6 +257,8 @@ class MainWindow(QMainWindow):
     def __init__(self, worker, parent=None):
         super(MainWindow, self).__init__(parent)
         self.worker = worker
+
+
 
         self.user_joined_signal = worker.user_joined
         self.user_left_signal = worker.user_left
@@ -293,6 +322,7 @@ class MainWindow(QMainWindow):
 
     def switch_to_chat_screen(self):
         self.chat_screen = ChatScreen(self)
+
         self.setCentralWidget(self.chat_screen)
 
 

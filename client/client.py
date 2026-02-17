@@ -1,3 +1,5 @@
+import os
+
 import socketio
 from cryptography.hazmat.primitives.asymmetric import x25519
 from cryptography.hazmat.primitives.asymmetric import ed25519
@@ -252,7 +254,31 @@ class User():
 
         print(f"[CLIENT] Pulito stato locale per '{username}'")
 
+
+    def send_file(self, username, file_path):
+        print("STO MANDANDO IL FILE A", username, "ED IO SONO", self.username)
+
+        with open(file_path, "rb") as f:
+            data = f.read()
+
+        # opzionale: nome file e mime
+        filename = os.path.basename(file_path)
+
+        # manda come evento separato; per iniziare evita chunking
+        return sio.call(
+            "file_msg",
+            {
+                "to": username,
+                "from": self.username,
+                "filename": filename,
+                "data": data,  # bytes: python-socketio li gestisce come binario
+            },
+        )
+
+
 def reg_callback(user, msg_event=lambda x: x, joined_event=None, left_event=None):
+
+
     @sio.on('x3dh_message')
     def on_x3dh_message(data):
         print("x3dh_received")
@@ -263,6 +289,31 @@ def reg_callback(user, msg_event=lambda x: x, joined_event=None, left_event=None
     def on_ratchet_msg(data):
         print("ratchet_msg ", data)
         msg_event(user.recieve_message(data["from"], data))
+        return True
+
+    @sio.on("file_msg")
+    def on_file_msg(data):
+        print("CLIENT file_msg ricevuto:", data["filename"], "da", data["from"])
+        sender = data["from"]
+        filename = data["filename"]
+        raw = data["data"]  # bytes
+
+        # per ora salviamo il file in una cartella locale, es. ./received_files
+        import os
+        BASE_DIR = os.path.dirname(os.path.abspath(__file__))  # cartella di client.py
+
+        received_dir = os.path.join(BASE_DIR, "received_files")
+        os.makedirs(received_dir, exist_ok=True)
+        save_path = os.path.join(received_dir, filename)
+        with open(save_path, "wb") as f:
+            f.write(raw)
+        print("File salvato in:", save_path)
+        # aggiorna il modello messaggi
+        user.messages.setdefault(sender, [])
+        user.messages[sender].append((sender, f"[FILE RICEVUTO] {filename}"))
+
+        # notifica la GUI (come per i messaggi testo)
+        msg_event(f"[FILE] {filename}")
         return True
 
     if joined_event is not None:
@@ -277,6 +328,9 @@ def reg_callback(user, msg_event=lambda x: x, joined_event=None, left_event=None
             user.cleanup_contact(data["username"])
             left_event(data["username"])
             return True
+
+
+
 
 
 if __name__ == "main":

@@ -66,7 +66,7 @@ def request_prekey(username):
 
 sio = socketio.AsyncServer(
     logger=True,
-    engineio_logger=True,
+    engineio_logger=False,
     ping_timeout=5,
     ping_interval=5
 )
@@ -89,7 +89,7 @@ async def pongi(sid, data):
 @sio.on("register_user")
 async def register_user(sid, data):
     username = data["username"]
-    print("REGISTER USER: ", data, "username:", username)
+    print("REGISTER USER: ", data)
     # 🔴 Controllo: username già in uso?
     if username in user_map:
         return {"ok": False, "error": "username_taken"}
@@ -211,6 +211,18 @@ async def on_get_users(sid):
     # user_map: dict {username: ...}
     usernames = list(user_map.keys())
     return {"users": usernames}
+
+@sio.on("file_msg")
+async def on_file_msg(sid, data):
+    to_user = data["to"]
+    print("SERVER file_msg:", data["filename"], "da", data["from"], "a", to_user)
+
+    if to_user not in user_map:
+        return False  # destinatario offline
+
+    # inoltra direttamente al destinatario
+    await sio.call("file_msg", data, to=user_map[to_user])
+    return True
 
 if __name__ == '__main__':
 
