@@ -316,10 +316,27 @@ class User():
         self.messages.setdefault(peer, [])
         self.messages[peer].append((peer, f"[FILE RICEVUTO] {filename}"))
 
+    def decrypt_incoming_file(self, data):
+        header = Header.deserialize(data['header'])
+        ciphertext = deserialize(data['cipher'])
+        hmac = deserialize(data['hmac'])
+        peer = data['from']
+        ad = self.x3dh_session[peer]['ad']
+
+        plaintext = RatchetDecrypt(
+            self.ratchet_session[peer],
+            header,
+            (ciphertext, hmac),
+            ad.encode('utf-8')
+        )
+        filename = data["filename"]
+        return plaintext, filename, peer
 
 
 
-def reg_callback(user, msg_event=lambda x: x, joined_event=None, left_event=None):
+
+
+def reg_callback(user, msg_event=lambda x: x, joined_event=None, left_event=None, gui_queue=None):
 
 
     @sio.on('x3dh_message')
@@ -336,10 +353,14 @@ def reg_callback(user, msg_event=lambda x: x, joined_event=None, left_event=None
 
     @sio.on("file_msg")
     def on_file_msg(data):
-        print("CLIENT file_msg ricevuto:", data["filename"], "da", data["from"])
-        user.receive_file(data)
-        filename = data["filename"]
-        msg_event(f"[FILE] {filename}")
+        # print("CLIENT file_msg ricevuto:", data["filename"], "da", data["from"])
+        # user.receive_file(data)
+        # filename = data["filename"]
+        # msg_event(f"[FILE] {filename}")
+
+        plaintext, filename, peer = user.decrypt_incoming_file(data)
+        gui_queue(("file_received", plaintext, filename, peer))
+        # notifichi la GUI che c’è un file pronto
         return True
 
     if joined_event is not None:

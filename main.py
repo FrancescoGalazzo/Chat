@@ -31,6 +31,7 @@ class Worker(QThread):
     message_received = Signal(str)
     user_joined = Signal(str)
     user_left = Signal(str)
+    file_received = Signal(bytes, str, str)
 
     def __init__(self, parent=None):
         super().__init__(parent)
@@ -49,7 +50,12 @@ class Worker(QThread):
             # Utente uscito, segnala alla GUI
             self.user_left.emit(username_)
 
-        reg_callback(user, on_message, joined_event=on_joined, left_event=on_left)
+        def on_file_msg(event_tuple):
+            event, plaintext, filename, peer = event_tuple
+            if event == "file_received":
+                self.file_received.emit(plaintext, filename, peer)
+
+        reg_callback(user, on_message, joined_event=on_joined, left_event=on_left, gui_queue=on_file_msg)
 
         # Socket.IO client bloccante: gira finché la connessione è attiva
         sio.wait()
@@ -258,8 +264,6 @@ class MainWindow(QMainWindow):
         super(MainWindow, self).__init__(parent)
         self.worker = worker
 
-
-
         self.user_joined_signal = worker.user_joined
         self.user_left_signal = worker.user_left
         self.message_received_signal = worker.message_received
@@ -273,6 +277,35 @@ class MainWindow(QMainWindow):
         self.user_joined_signal.connect(self.on_user_joined_gui)
         self.user_left_signal.connect(self.on_user_left_gui)
         self.message_received_signal.connect(self.on_message_received_gui)
+        self.worker.file_received.connect(self.handle_file_received)
+
+    def handle_file_received(self, plaintext: bytes, filename: str, peer: str):
+        save_path, _ = QFileDialog.getSaveFileName(
+            self,
+            "Salva file ricevuto",
+            filename,
+            "Tutti i file (*.*)"
+        )
+
+        messages_for_peer = user.messages.setdefault(peer, [])
+
+        if not save_path:
+            messages_for_peer.append((peer, f"[FILE REJECTED] {filename}"))
+        else:
+
+            with open(save_path, "wb") as f:
+                f.write(plaintext)
+            messages_for_peer.append(
+                (peer, f"[FILE RICEVUTO] {filename} -> {save_path}")
+            )
+
+        if self.chat_screen is not None:
+            # se si aspetta solo i messaggi di quel peer
+            self.chat_screen.update_messages(messages_for_peer)
+            # oppure, se si aspetta tutto il dict:
+            # self.chat_screen.update_messages(user.messages)
+
+
 
     def on_user_joined_gui(self, username_):
         print("GUI SLOT: user joined", username_)
@@ -322,7 +355,6 @@ class MainWindow(QMainWindow):
 
     def switch_to_chat_screen(self):
         self.chat_screen = ChatScreen(self)
-
         self.setCentralWidget(self.chat_screen)
 
 
