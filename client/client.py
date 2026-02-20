@@ -138,7 +138,12 @@ class User():
         header, ciphertext = RatchetEncrypt(self.ratchet_session[username], msg.encode('utf-8'), ad.encode('utf-8'))
         ciphertext, mac = ciphertext
         self.messages[username].append((self.username, msg ))
-        return sio.call("ratchet_msg", {'username': username,'cipher': serialize(ciphertext), 'header': header.serialize(), 'hmac': serialize(mac), 'from': self.username})
+        return sio.call("ratchet_msg",
+                            {'username': username,
+                                'cipher': serialize(ciphertext),
+                                'header': header.serialize(),
+                                'hmac': serialize(mac),
+                                'from': self.username})
         
     def is_connected(self, username):
         if username in self.x3dh_session:
@@ -264,16 +269,54 @@ class User():
         # opzionale: nome file e mime
         filename = os.path.basename(file_path)
 
+
+        ad = self.x3dh_session[username]['ad']
+        header, ciphertext = RatchetEncrypt(self.ratchet_session[username], data, ad.encode('utf-8'))
+        ciphertext, mac = ciphertext
+        #self.messages[username].append((self.username, msg ))
+
         # manda come evento separato; per iniziare evita chunking
         return sio.call(
             "file_msg",
             {
                 "to": username,
-                "from": self.username,
                 "filename": filename,
-                "data": data,  # bytes: python-socketio li gestisce come binario
+                'username': username,
+                'cipher': serialize(ciphertext),
+                'header': header.serialize(),
+                'hmac': serialize(mac),
+                'from': self.username
             },
         )
+
+    def receive_file(self, data):
+        print("DECIFRO IL FILE")
+        header = Header.deserialize(data['header'])
+        ciphertext = deserialize(data['cipher'])
+        hmac = deserialize(data['hmac'])
+        peer = data['from']
+        if peer not in self.x3dh_session:
+            print("Nessuna sessione X3DH con", peer)
+            return
+        print("X3DH session: ", self.x3dh_session)
+        ad = self.x3dh_session[peer]['ad']
+        plaintext = RatchetDecrypt(self.ratchet_session[peer], header, (ciphertext, hmac), ad.encode('utf-8'))
+        print("recv:", plaintext)
+        filename = data["filename"]
+        # per ora salviamo il file in una cartella locale, es. ./received_files
+        BASE_DIR = os.path.dirname(os.path.abspath(__file__))  # cartella di client.py
+
+        received_dir = os.path.join(BASE_DIR, "received_files")
+        os.makedirs(received_dir, exist_ok=True)
+        save_path = os.path.join(received_dir, filename)
+        with open(save_path, "wb") as f:
+            f.write(plaintext)
+        print("File salvato in:", save_path)
+        # aggiorna il modello messaggi
+        self.messages.setdefault(peer, [])
+        self.messages[peer].append((peer, f"[FILE RICEVUTO] {filename}"))
+
+
 
 
 def reg_callback(user, msg_event=lambda x: x, joined_event=None, left_event=None):
@@ -281,7 +324,7 @@ def reg_callback(user, msg_event=lambda x: x, joined_event=None, left_event=None
 
     @sio.on('x3dh_message')
     def on_x3dh_message(data):
-        print("x3dh_received")
+        print("x3dh_received", data)
         user.receive_x3dh(data["from"], data)
         return True
 
@@ -294,25 +337,8 @@ def reg_callback(user, msg_event=lambda x: x, joined_event=None, left_event=None
     @sio.on("file_msg")
     def on_file_msg(data):
         print("CLIENT file_msg ricevuto:", data["filename"], "da", data["from"])
-        sender = data["from"]
+        user.receive_file(data)
         filename = data["filename"]
-        raw = data["data"]  # bytes
-
-        # per ora salviamo il file in una cartella locale, es. ./received_files
-        import os
-        BASE_DIR = os.path.dirname(os.path.abspath(__file__))  # cartella di client.py
-
-        received_dir = os.path.join(BASE_DIR, "received_files")
-        os.makedirs(received_dir, exist_ok=True)
-        save_path = os.path.join(received_dir, filename)
-        with open(save_path, "wb") as f:
-            f.write(raw)
-        print("File salvato in:", save_path)
-        # aggiorna il modello messaggi
-        user.messages.setdefault(sender, [])
-        user.messages[sender].append((sender, f"[FILE RICEVUTO] {filename}"))
-
-        # notifica la GUI (come per i messaggi testo)
         msg_event(f"[FILE] {filename}")
         return True
 

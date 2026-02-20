@@ -197,7 +197,7 @@ def ENCRYPT_DOUB_RATCH(mk, plaintext, associated_data):
     h = hmac.HMAC(auth_key, hashes.SHA256())
     h.update(padded_assoc_data + ciphertext)
     h_out = h.finalize()
-    return (ciphertext, h_out)
+    return ciphertext, h_out
 
 
 def DECRYPT_DOUB_RATCH(mk, cipherout, associated_data):

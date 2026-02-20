@@ -216,12 +216,13 @@ async def on_get_users(sid):
 async def on_file_msg(sid, data):
     to_user = data["to"]
     print("SERVER file_msg:", data["filename"], "da", data["from"], "a", to_user)
+    #print(data)
 
     if to_user not in user_map:
         return False  # destinatario offline
 
     # inoltra direttamente al destinatario
-    await sio.call("file_msg", data, to=user_map[to_user])
+    await sio.call("file_msg", data, sid=user_map[data['username']])
     return True
 
 if __name__ == '__main__':
