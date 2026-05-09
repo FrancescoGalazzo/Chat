@@ -231,7 +231,7 @@ class ChatScreen(QWidget):
 
         # opzionale: mostra qualcosa in chat
         messages = user.messages.setdefault(target_user, [])
-        messages.append((username, f"[FILE] {file_path}"))
+        messages.append((username, f"[FILE SENT] {file_path}"))
         self.update_messages(messages)
 
     def send_message(self):
@@ -296,7 +296,7 @@ class MainWindow(QMainWindow):
             with open(save_path, "wb") as f:
                 f.write(plaintext)
             messages_for_peer.append(
-                (peer, f"[FILE RICEVUTO] {filename} -> {save_path}")
+                (peer, f"[FILE RECEIVED] {filename} -> {save_path}")
             )
 
         if self.chat_screen is not None:
@@ -325,9 +325,7 @@ class MainWindow(QMainWindow):
 
     def on_message_received_gui(self, data):
         global target_user
-
         current = self.centralWidget()
-
         if isinstance(current, ChatScreen) and target_user is not None:
             messages = user.messages.get(target_user, [])
             self.update_chat(messages)
